@@ -1,5 +1,6 @@
 package com.spl.web;
 
+import com.spl.entity.Car;
 import com.spl.entity.Person;
 import com.spl.service.PersonService;
 import lombok.RequiredArgsConstructor;
@@ -7,8 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.OK;
 
 @RequiredArgsConstructor
 @RestController
@@ -40,5 +43,11 @@ public class PersonController {
     public ResponseEntity<Void> deletePerson(@PathVariable Long id) {
         service.remove(id);
         return new ResponseEntity<>(OK);
+    }
+
+    @GetMapping("{id}/cars") //TODO: write a test
+    public Set<Car> getPersonsCars(@PathVariable Long id) {
+        Person person = service.findById(id);
+        return person.getCars();
     }
 }

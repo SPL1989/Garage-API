@@ -1,7 +1,9 @@
 package com.spl.web;
 
 import com.spl.entity.Car;
+import com.spl.entity.Person;
 import com.spl.service.CarService;
+import com.spl.service.PersonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,8 @@ import static org.springframework.http.HttpStatus.*;
 public class CarController {
 
     private final CarService service;
+
+    private final PersonService personService;
 
     @GetMapping
     public ResponseEntity<List<Car>> findAllCars() {
@@ -41,5 +45,11 @@ public class CarController {
     public ResponseEntity<Void> deleteCar(@PathVariable String vin) {
         service.remove(vin);
         return new ResponseEntity<>(OK);
+    }
+
+    @GetMapping("{vin}/owner")
+    public Person getCarsOwner(@PathVariable String vin) {
+        Car car = service.findCar(vin);
+        return personService.findById(car.getOwner());
     }
 }

@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PersonController.class)
+@WithMockUser(username = "user1")
 public class PersonControllerTest {
     @Autowired
     MockMvc mockMvc;
@@ -76,7 +79,8 @@ public class PersonControllerTest {
     @Test
     void addPersonTest() throws Exception {
         doReturn(person).when(service).add(person);
-        mockMvc.perform(post("/persons").contentType(APPLICATION_JSON).content(personJson))
+        mockMvc.perform(post("/persons").contentType(APPLICATION_JSON).content(personJson)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(content().json(personJson))
                 .andExpect(status().isCreated());
     }
@@ -86,7 +90,8 @@ public class PersonControllerTest {
         person.setFirstName("Alexandr");
         personJson = "{\"id\":1,\"firstName\":\"Alexandr\",\"lastName\":\"Cole\",\"cars\":[]}";
         doReturn(person).when(service).update(1L, person);
-        mockMvc.perform(put("/persons/1").contentType(APPLICATION_JSON).content(personJson))
+        mockMvc.perform(put("/persons/1").contentType(APPLICATION_JSON).content(personJson)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(content().json(personJson))
                 .andExpect(status().isOk());
     }
@@ -95,7 +100,8 @@ public class PersonControllerTest {
     void updatePersonThrowsException() throws Exception {
         doThrow(new ResponseStatusException(NOT_FOUND, "No person with id 2 in DB"))
                 .when(service).update(2L, person);
-        mockMvc.perform(put("/persons/2").contentType(APPLICATION_JSON).content(personJson))
+        mockMvc.perform(put("/persons/2").contentType(APPLICATION_JSON).content(personJson)
+                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof ResponseStatusException))
                 .andExpect(result -> assertEquals("404 NOT_FOUND \"No person with id 2 in DB\"",
                         Objects.requireNonNull(result.getResolvedException()).getMessage()))
@@ -104,8 +110,17 @@ public class PersonControllerTest {
 
     @Test
     void deletePersonTest() throws Exception {
-        mockMvc.perform(delete("/persons/1"))
+        mockMvc.perform(delete("/persons/1")
+                        .with(SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(status().isOk());
         verify(service).remove(1L);
+    }
+
+    @Test
+    void getPersonsCarsReturnEmptySet() throws Exception {
+        doReturn(person).when(service).findById(1L);
+        mockMvc.perform(get("/persons/1/cars"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("[]"));
     }
 }

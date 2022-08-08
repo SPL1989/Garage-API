@@ -17,6 +17,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
+import static org.springframework.http.HttpStatus.*;
 
 @ExtendWith(MockitoExtension.class)
 public class CarServiceTest {
@@ -54,8 +55,8 @@ public class CarServiceTest {
 
     @Test
     void addCarThrowsException() {
-        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "This vin is already exists"))
-                .when(repository).save(car);
+        doThrow(new ResponseStatusException(BAD_REQUEST, "This vin is already exists"))
+                .when(repository).findById("KL1NF193E6K323675");
         assertThrows(ResponseStatusException.class, () -> service.add(car));
     }
 
