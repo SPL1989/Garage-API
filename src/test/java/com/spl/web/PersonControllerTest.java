@@ -2,6 +2,7 @@ package com.spl.web;
 
 import com.spl.entity.Person;
 import com.spl.service.PersonService;
+import org.hamcrest.core.Is;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -9,6 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
@@ -21,8 +23,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = PersonController.class)
 @WithMockUser(username = "user1")
@@ -122,5 +123,15 @@ public class PersonControllerTest {
         mockMvc.perform(get("/persons/1/cars"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("[]"));
+    }
+
+    @Test
+    void validationTestWhenPersonIsInValid() throws Exception {
+        String inValidPersonJson = "{\"id\":1,\"firstName\":null,\"lastName\":\"Cole\",\"cars\":[]}";
+        mockMvc.perform(post("/persons").with(SecurityMockMvcRequestPostProcessors.csrf())
+                .contentType(APPLICATION_JSON).content(inValidPersonJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(jsonPath("$.firstName", Is.is("First name should not be empty")));
     }
 }

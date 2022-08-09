@@ -4,6 +4,7 @@ import com.spl.entity.Car;
 import com.spl.entity.Person;
 import com.spl.service.CarService;
 import com.spl.service.PersonService;
+import org.hamcrest.core.Is;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,8 +25,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @WebMvcTest(controllers = CarController.class)
@@ -154,6 +154,17 @@ public class CarControllerTests {
         mockMvc.perform(get("/cars/KL1NF193E6K323675/owner"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(personJson));
+    }
+
+    @Test
+    void validationTestWhenCarIsInValid() throws Exception {
+        String inValidCarJson = "{\"vin\":\"KL1NF193E6\",\"number\":\"AA1111AA\"," +
+                "\"manufacturer\":\"Chevrolet\",\"model\":\"Lacetti\",\"owner\":1}";
+        mockMvc.perform(post("/cars").with(SecurityMockMvcRequestPostProcessors.csrf())
+                        .content(inValidCarJson).contentType(APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.vin", Is.is("VIN should be 17 characters length")))
+                .andExpect(content().contentType(APPLICATION_JSON));
     }
 
 }

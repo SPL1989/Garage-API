@@ -39,14 +39,10 @@ public class CarService {
     public Car updateCar(String vin, Car car) {
         Car existing = repository.findById(vin).orElseThrow(() -> new ResponseStatusException(NOT_FOUND,
                 format("No car with vin %s in DB", vin)));
-        if(car.getVin().length() > 0) //TODO: move validation elsewhere
-            existing.setVin(car.getVin());
-        if(car.getNumber().length() > 0)
-            existing.setNumber(car.getNumber());
-        if(car.getManufacturer().length() > 0)
-            existing.setManufacturer(car.getManufacturer());
-        if(car.getModel().length() > 0)
-            existing.setModel(car.getModel());
+        existing.setVin(car.getVin());
+        existing.setNumber(car.getNumber());
+        existing.setManufacturer(car.getManufacturer());
+        existing.setModel(car.getModel());
         return existing;
     }
 

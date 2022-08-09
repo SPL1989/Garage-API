@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,8 +35,12 @@ public class Person {
     )
     Long id;
 
+    @NotBlank(message = "First name should not be empty")
+    @Size(min = 2, max = 20, message = "First name should be between 2 and 20 characters length")
     private String firstName;
 
+    @NotBlank(message = "Last name should not be empty")
+    @Size(min = 2, max = 20, message = "Last name should be between 2 and 20 characters length")
     private String lastName;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)

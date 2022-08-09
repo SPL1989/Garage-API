@@ -34,12 +34,8 @@ public class PersonService {
     public Person update(Long id, Person person) {
         Person existing = repository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, format("No person with id %d in DB", id)));
-        if (person.getFirstName().length() > 0) {//TODO:Move validation elsewhere
-            existing.setFirstName(person.getFirstName());
-        }
-        if (person.getLastName().length() > 0) {
-            existing.setLastName(person.getLastName());
-        }
+        existing.setFirstName(person.getFirstName());
+        existing.setLastName(person.getLastName());
         return existing;
     }
 

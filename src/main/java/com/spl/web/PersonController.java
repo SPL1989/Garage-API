@@ -5,13 +5,17 @@ import com.spl.entity.Person;
 import com.spl.service.PersonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 
 @RequiredArgsConstructor
 @RestController
@@ -30,12 +34,12 @@ public class PersonController {
     }
 
     @PostMapping
-    public ResponseEntity<Person> addPerson (@RequestBody Person person) {
+    public ResponseEntity<Person> addPerson (@Valid @RequestBody Person person) {
         return new ResponseEntity<>(service.add(person), CREATED);
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<Person> updatePerson(@PathVariable Long id, @RequestBody Person person) {
+    public ResponseEntity<Person> updatePerson(@PathVariable Long id, @Valid @RequestBody Person person) {
         return new ResponseEntity<>(service.update(id, person), OK);
     }
 
@@ -49,5 +53,17 @@ public class PersonController {
     public Set<Car> getPersonsCars(@PathVariable Long id) {
         Person person = service.findById(id);
         return person.getCars();
+    }
+
+    @ResponseStatus(BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String, String> handleValidationException(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError)error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return errors;
     }
 }
