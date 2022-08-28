@@ -20,11 +20,11 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class PersonServiceTest {
+class PersonServiceImplTest {
 
     @Spy
     @InjectMocks
-    PersonService service;
+    PersonServiceImpl service;
 
     @Mock
     PersonRepository repository;

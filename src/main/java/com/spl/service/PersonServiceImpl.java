@@ -10,11 +10,11 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.transaction.Transactional;
 import java.util.List;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 
 @Service
 @AllArgsConstructor
-public class PersonService {
+public class PersonServiceImpl implements PersonService{
     private final PersonRepository repository;
 
     public List<Person> findAll() {

@@ -8,7 +8,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -16,14 +15,14 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
-import static org.springframework.http.HttpStatus.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class CarServiceTest {
+public class CarServiceImpTest {
     @Spy
     @InjectMocks
-    CarService service;
+    CarServiceImp service;
 
     @Mock
     CarRepository repository;
@@ -55,8 +54,7 @@ public class CarServiceTest {
 
     @Test
     void addCarThrowsException() {
-        doThrow(new ResponseStatusException(BAD_REQUEST, "This vin is already exists"))
-                .when(repository).findById("KL1NF193E6K323675");
+        doReturn(Optional.of(car)).when(repository).findById(car.getVin());
         assertThrows(ResponseStatusException.class, () -> service.add(car));
     }
 

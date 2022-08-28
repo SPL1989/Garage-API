@@ -15,7 +15,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 @AllArgsConstructor
-public class CarService {
+public class CarServiceImp implements CarService{
 
     private final CarRepository repository;
 

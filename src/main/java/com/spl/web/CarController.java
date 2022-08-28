@@ -6,14 +6,13 @@ import com.spl.service.CarService;
 import com.spl.service.PersonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -38,7 +37,7 @@ public class CarController {
 
     @GetMapping("{vin}")
     public ResponseEntity<Car> findCar(@PathVariable String vin) {
-       return new ResponseEntity<>(service.findCar(vin), OK);
+        return new ResponseEntity<>(service.findCar(vin), OK);
     }
 
     @PutMapping("{vin}")
@@ -60,12 +59,11 @@ public class CarController {
 
     @ResponseStatus(BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Map<String, String> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public Set<String> handleValidationException(MethodArgumentNotValidException ex) {
+        Set<String> errors = new HashSet<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError)error).getField();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            errors.add(errorMessage);
         });
         return errors;
     }

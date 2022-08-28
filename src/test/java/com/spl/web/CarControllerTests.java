@@ -1,10 +1,11 @@
 package com.spl.web;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spl.entity.Car;
 import com.spl.entity.Person;
-import com.spl.service.CarService;
-import com.spl.service.PersonService;
-import org.hamcrest.core.Is;
+import com.spl.service.CarServiceImp;
+import com.spl.service.PersonServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -29,17 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(controllers = CarController.class)
-@WithMockUser(username = "user1")
 public class CarControllerTests {
 
     @Autowired
     MockMvc mockMvc;
 
     @MockBean
-    CarService service;
+    CarServiceImp service;
 
     @MockBean
-    PersonService personService;
+    PersonServiceImpl personServiceImpl;
+    ObjectMapper objectMapper = new ObjectMapper();
 
     Car car = Car.builder()
             .vin("KL1NF193E6K323675")
@@ -48,8 +49,8 @@ public class CarControllerTests {
             .model("Lacetti")
             .owner(1L)
             .build();
-    String carJson = "{\"vin\":\"KL1NF193E6K323675\",\"number\":\"AA1111AA\"," +
-            "\"manufacturer\":\"Chevrolet\",\"model\":\"Lacetti\",\"owner\":1}";
+
+    String carJson = objectMapper.writeValueAsString(car);
 
     Person person = Person.builder()
             .id(1L)
@@ -58,10 +59,13 @@ public class CarControllerTests {
             .cars(Set.of(car))
             .build();
 
-    String personJson = "{\"id\":1,\"firstName\":\"Alex\",\"lastName\":\"Cole\",\"cars\":" +
-            "[{\"vin\":\"KL1NF193E6K323675\",\"number\":\"AA1111AA\",\"manufacturer\":\"Chevrolet\",\"model\":\"Lacetti\",\"owner\":1}]}";
+    String personJson = objectMapper.writeValueAsString(person);
+
+    public CarControllerTests() throws JsonProcessingException {
+    }
 
     @Test
+    @WithMockUser(username = "user1")
     void findAllCarsReturnEmptyList() throws Exception {
         mockMvc.perform(get("/cars"))
                 .andExpect(content().string("[]"))
@@ -69,6 +73,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void findAllReturnListOfCars() throws Exception {
         doReturn(List.of(car)).when(service).getCars();
         mockMvc.perform(get("/cars"))
@@ -77,6 +82,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void addCarTest() throws Exception {
         doReturn(car).when(service).add(car);
         mockMvc.perform(post("/cars").contentType(APPLICATION_JSON).content(carJson)
@@ -86,6 +92,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void addCarThrowsException() throws Exception {
         doThrow(new ResponseStatusException(BAD_REQUEST, "This vin is already exists"))
                 .when(service).add(car);
@@ -98,6 +105,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void findCarTest() throws Exception {
         doReturn(car).when(service).findCar("KL1NF193E6K323675");
         mockMvc.perform(get("/cars/KL1NF193E6K323675"))
@@ -106,6 +114,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void findCarThrowsException() throws Exception {
         doThrow(new ResponseStatusException(NOT_FOUND, "No car with vin WF0AXXWPDA3U77669 in DB"))
                 .when(service).findCar("WF0AXXWPDA3U77669");
@@ -117,6 +126,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void updateCarTest() throws Exception {
         car.setNumber("XXXXX");
         String carJson = "{\"vin\":\"KL1NF193E6K323675\",\"number\":\"XXXXX\",\"manufacturer\":\"Chevrolet\",\"model\":\"Lacetti\",\"owner\":1}";
@@ -128,6 +138,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void updateCarThrowsException() throws Exception {
         doThrow(new ResponseStatusException(NOT_FOUND, "No car with vin KL1NF193E6K323675 in DB"))
                 .when(service).updateCar("KL1NF193E6K323675", car);
@@ -140,6 +151,7 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void deleteCarTest() throws Exception {
         mockMvc.perform(delete("/cars/KL1NF193E6K323675")
                         .with(SecurityMockMvcRequestPostProcessors.csrf()))
@@ -148,8 +160,9 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void getCarsOwnerTest() throws Exception {
-        doReturn(person).when(personService).findById(1L);
+        doReturn(person).when(personServiceImpl).findById(1L);
         doReturn(car).when(service).findCar("KL1NF193E6K323675");
         mockMvc.perform(get("/cars/KL1NF193E6K323675/owner"))
                 .andExpect(status().isOk())
@@ -157,14 +170,51 @@ public class CarControllerTests {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void validationTestWhenCarIsInValid() throws Exception {
         String inValidCarJson = "{\"vin\":\"KL1NF193E6\",\"number\":\"AA1111AA\"," +
                 "\"manufacturer\":\"Chevrolet\",\"model\":\"Lacetti\",\"owner\":1}";
         mockMvc.perform(post("/cars").with(SecurityMockMvcRequestPostProcessors.csrf())
                         .content(inValidCarJson).contentType(APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.vin", Is.is("VIN should be 17 characters length")))
-                .andExpect(content().contentType(APPLICATION_JSON));
+                .andExpect(content().contentType(APPLICATION_JSON))
+                .andExpect(content().string("[\"VIN should be 17 characters length\"]"));
+    }
+
+    @Test
+    void returnUnauthorizedWhenGetAllCars() throws Exception {
+        mockMvc.perform(get("/cars"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void returnUnauthorizedWhenGetCar() throws Exception {
+        mockMvc.perform(get("/cars/KL1NF193E6K323675"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void returnForbiddenWhenAddCar() throws Exception {
+        mockMvc.perform(post("/cars").contentType(APPLICATION_JSON).content(carJson))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void returnForbiddenWhenUpdateCar() throws Exception {
+        mockMvc.perform(put("/cars/KL1NF193E6K323675").contentType(APPLICATION_JSON).content(carJson))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void returnForbiddenWhenDeleteCar() throws Exception {
+        mockMvc.perform(delete("/cars/KL1NF193E6K323675"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void returnUnauthorizedWhenGetCarsOwner() throws Exception {
+        mockMvc.perform(get("/cars/KL1NF193E6K323675/owner"))
+                .andExpect(status().isUnauthorized());
     }
 
 }

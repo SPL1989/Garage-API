@@ -1,8 +1,9 @@
 package com.spl.web;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spl.entity.Person;
-import com.spl.service.PersonService;
-import org.hamcrest.core.Is;
+import com.spl.service.PersonServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -10,7 +11,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
@@ -23,16 +23,18 @@ import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PersonController.class)
-@WithMockUser(username = "user1")
 public class PersonControllerTest {
     @Autowired
     MockMvc mockMvc;
 
     @MockBean
-    PersonService service;
+    PersonServiceImpl service;
+
+    ObjectMapper objectMapper = new ObjectMapper();
 
     Person person = Person.builder()
             .id(1L)
@@ -41,9 +43,13 @@ public class PersonControllerTest {
             .cars(new HashSet<>())
             .build();
 
-    String personJson = "{\"id\":1,\"firstName\":\"Alex\",\"lastName\":\"Cole\",\"cars\":[]}";
+    String personJson = objectMapper.writeValueAsString(person);
+
+    public PersonControllerTest() throws JsonProcessingException {
+    }
 
     @Test
+    @WithMockUser(username = "user1")
     void findAllPersonsWhenDbIsEmpty() throws Exception {
         mockMvc.perform(get("/persons"))
                 .andExpect(content().string("[]"))
@@ -51,6 +57,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void findAllPersonsWhenDbIsNotEmpty() throws Exception {
         doReturn(List.of(person)).when(service).findAll();
         mockMvc.perform(get("/persons"))
@@ -59,6 +66,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void findPersonById() throws Exception {
         doReturn(person).when(service).findById(1L);
         mockMvc.perform(get("/persons/1"))
@@ -67,6 +75,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void findPersonByIdThrowsException() throws Exception {
         doThrow(new ResponseStatusException(NOT_FOUND, "No person with id 2 in DB"))
                 .when(service).findById(2L);
@@ -78,6 +87,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void addPersonTest() throws Exception {
         doReturn(person).when(service).add(person);
         mockMvc.perform(post("/persons").contentType(APPLICATION_JSON).content(personJson)
@@ -87,6 +97,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void updatePersonTest() throws Exception {
         person.setFirstName("Alexandr");
         personJson = "{\"id\":1,\"firstName\":\"Alexandr\",\"lastName\":\"Cole\",\"cars\":[]}";
@@ -98,6 +109,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void updatePersonThrowsException() throws Exception {
         doThrow(new ResponseStatusException(NOT_FOUND, "No person with id 2 in DB"))
                 .when(service).update(2L, person);
@@ -110,6 +122,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void deletePersonTest() throws Exception {
         mockMvc.perform(delete("/persons/1")
                         .with(SecurityMockMvcRequestPostProcessors.csrf()))
@@ -118,6 +131,7 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void getPersonsCarsReturnEmptySet() throws Exception {
         doReturn(person).when(service).findById(1L);
         mockMvc.perform(get("/persons/1/cars"))
@@ -126,12 +140,44 @@ public class PersonControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user1")
     void validationTestWhenPersonIsInValid() throws Exception {
         String inValidPersonJson = "{\"id\":1,\"firstName\":null,\"lastName\":\"Cole\",\"cars\":[]}";
         mockMvc.perform(post("/persons").with(SecurityMockMvcRequestPostProcessors.csrf())
-                .contentType(APPLICATION_JSON).content(inValidPersonJson))
+                        .contentType(APPLICATION_JSON).content(inValidPersonJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(APPLICATION_JSON))
-                .andExpect(jsonPath("$.firstName", Is.is("First name should not be empty")));
+                .andExpect(content().string("[\"First name should not be empty\"]"));
+    }
+
+    @Test
+    void returnUnauthorizedWhenGetAllPersons() throws Exception {
+        mockMvc.perform(get("/persons"))
+                .andExpect(status().isUnauthorized());
+    }
+    @Test
+    void returnUnauthorizedWhenGetPerson() throws Exception {
+        mockMvc.perform(get("/persons/1"))
+                .andExpect(status().isUnauthorized());
+    }
+    @Test
+    void returnUnauthorizedWhenGetPersonsCars() throws Exception {
+        mockMvc.perform(get("/persons/1/cars"))
+                .andExpect(status().isUnauthorized());
+    }
+    @Test
+    void returnForbiddenWhenAddPerson() throws Exception {
+        mockMvc.perform(post("/persons").contentType(APPLICATION_JSON).content(personJson))
+                .andExpect(status().isForbidden());
+    }
+    @Test
+    void returnForbiddenWhenUpdatePerson() throws Exception {
+        mockMvc.perform(put("/persons/1").contentType(APPLICATION_JSON).content(personJson))
+                .andExpect(status().isForbidden());
+    }
+    @Test
+    void returnForbiddenWhenDeletePerson() throws Exception {
+        mockMvc.perform(put("/persons/1"))
+                .andExpect(status().isForbidden());
     }
 }
